@@ -14,13 +14,17 @@ struct ParameterConstraint: Constraint, Hashable {
   /// The right operand.
   private(set) var right: AnyType
 
+  /// The right operand.
+  private(set) var argument: AnyExprID
+
   let origin: ConstraintOrigin
 
   /// Creates an instance with the given properties.
-  init(_ left: AnyType, _ right: AnyType, origin: ConstraintOrigin) {
+  init(_ left: AnyType, _ right: AnyType, origin: ConstraintOrigin, withArgument e: AnyExprID) {
     self.left = left
     self.right = right
     self.origin = origin
+    self.argument = e
   }
 
   /// Inserts the type variables that occur free in `self` into `s`.
@@ -38,6 +42,6 @@ struct ParameterConstraint: Constraint, Hashable {
 
 extension ParameterConstraint: CustomStringConvertible {
 
-  var description: String { "\(left) ⤷ \(right)" }
+  var description: String { "\(left) (expr: \(argument)) ⤷ \(right)" }
 
 }

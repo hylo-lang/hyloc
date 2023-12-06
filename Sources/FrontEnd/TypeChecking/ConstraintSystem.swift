@@ -555,12 +555,16 @@ struct ConstraintSystem {
     autoclosureParameter goal: ParameterConstraint, ofType p: ParameterType
   ) -> Outcome? {
     let t = LambdaType(p.bareType)!
+    // Constraint for argument matching lambda return type.
     let s = schedule(
       ParameterConstraint(
-        goal.left, AnyType(ParameterType(.`let`, t.output)), origin: goal.origin.subordinate()))
-    // TODO: the env is not always .void
+        goal.left, AnyType(ParameterType(.`let`, t.output)), origin: goal.origin.subordinate(),
+        withArgument: goal.argument))
+    // Constraint for the environment.
+    let e = TupleType(checker.implicitCaptures(of: goal.argument))
     let s1 = schedule(
-      EqualityConstraint(.void, t.environment, origin: goal.origin.subordinate()))
+      EqualityConstraint(^e, t.environment, origin: goal.origin.subordinate()))
+    // Aggregate the constraints.
     return .product([s, s1]) { (d, m, r) in
       let (l, r) = (m.reify(goal.left), m.reify(goal.right))
       d.insert(.error(cannotPass: l, toParameter: r, at: goal.origin.site))
@@ -688,7 +692,8 @@ struct ConstraintSystem {
     for (a, j) in zip(goal.arguments, argumentsToParameter) {
       let b = callee.inputs[j]
       let o = ConstraintOrigin(.argument, at: a.valueSite)
-      subordinates.append(schedule(ParameterConstraint(a.type, b.type, origin: o)))
+      subordinates.append(
+        schedule(ParameterConstraint(a.type, b.type, origin: o, withArgument: a.value)))
     }
     subordinates.append(
       schedule(EqualityConstraint(callee.output, goal.output, origin: goal.origin.subordinate())))
