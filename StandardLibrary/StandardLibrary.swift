@@ -1,6 +1,24 @@
+import CBORCoding
 import Core
 import Foundation
 import Utils
+
+/// An error thrown when a resource couldn't be found on the host.
+private struct ResourceNotFound: Error {
+
+  /// An identifier for the resource that wasn't found.
+  let resource: String
+
+}
+
+/// Returns the URL of the resource with given name and extension in the bundle associated with the
+/// current Swift module.
+private func resource(_ name: String, withExtension ext: String) throws -> URL {
+  guard let u = Bundle.module.url(forResource: name, withExtension: ext) else {
+    throw ResourceNotFound(resource: "\(name).\(ext)")
+  }
+  return u
+}
 
 // This path points into the source tree rather than to some copy so that when diagnostics are
 // issued for the standard library, they point to the original source files and edits to those
@@ -20,14 +38,24 @@ private let freestandingLibrarySourceRoot = hostedLibrarySourceRoot.appendingPat
 
 extension Utils.Host {
 
+  /// Returns an AST representing the given standard library `variant` (either `"freestanding"` or
+  /// `"hosted"`), conditionally compiled for targeting the host platform.
+  private static func libraryAST(_ variant: String) -> Result<AST, Error> {
+    Result {
+      try CBORDecoder().forAST.decode(
+        AST.self,
+        from: Data(
+          contentsOf: resource(variant, withExtension: "cbor"),
+          options: .alwaysMapped))
+    }
+  }
+
   /// An AST representing the whole standard library, conditionally compiled for targeting the host
   /// platform.
-  public static let hostedLibraryAST
-    = Result { try AST(libraryRoot: hostedLibrarySourceRoot, ConditionalCompilationFactors(freestanding: false)) }
+  public static let hostedLibraryAST: Result<AST, Error> = libraryAST("hosted")
 
   /// An AST representing the freestanding core of standard library, conditionally compiled for
   /// targeting the host platform.
-  public static let freestandingLibraryAST
-    = Result { try AST(libraryRoot: freestandingLibrarySourceRoot, ConditionalCompilationFactors(freestanding: true)) }
+  public static let freestandingLibraryAST: Result<AST, Error> = libraryAST("freestanding")
 
 }

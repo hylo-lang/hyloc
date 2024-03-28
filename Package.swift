@@ -55,6 +55,7 @@ let package = Package(
     .package(
       url: "https://github.com/apple/swift-format",
       from: "508.0.1"),
+    .package(url: "https://github.com/dabrahams/CBORCoding.git", branch: "main"),
     .package(
       url: "https://github.com/SwiftPackageIndex/SPIManifest.git",
       from: "0.12.0"),
@@ -129,6 +130,7 @@ let package = Package(
       name: "Utils",
       dependencies: [
         .product(name: "BigInt", package: "BigInt"),
+        .product(name: "CBORCoding", package: "CBORCoding"),
         .product(name: "Collections", package: "swift-collections"),
         .product(name: "Algorithms", package: "swift-algorithms"),
       ],
@@ -141,10 +143,12 @@ let package = Package(
 
     .target(
       name: "StandardLibrary",
-      dependencies: ["FrontEnd", "Utils"],
+      dependencies: ["FrontEnd", "Utils", .product(name: "CBORCoding", package: "CBORCoding")],
       path: "StandardLibrary",
       exclude: ["Sources"],
-      swiftSettings: allTargetsSwiftSettings),
+      swiftSettings: allTargetsSwiftSettings,
+      plugins: ["StandardLibraryBuilderPlugin"]
+    ),
 
     .plugin(
       name: "TestGeneratorPlugin", capability: .buildTool(),
@@ -156,6 +160,19 @@ let package = Package(
       dependencies: [
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         "Utils",
+      ],
+      swiftSettings: allTargetsSwiftSettings),
+
+    .plugin(
+      name: "StandardLibraryBuilderPlugin", capability: .buildTool(),
+      dependencies: osIsWindows ? [] : ["BuildStandardLibrary"]),
+
+    .executableTarget(
+      name: "BuildStandardLibrary",
+      dependencies: [
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+        .product(name: "CBORCoding", package: "CBORCoding"),
+        "Core", "Utils", "FrontEnd",
       ],
       swiftSettings: allTargetsSwiftSettings),
 
@@ -180,6 +197,7 @@ let package = Package(
       dependencies: [
         "Core", "FrontEnd", "IR", "TestUtils", "StandardLibrary", "Utils",
         .product(name: "Algorithms", package: "swift-algorithms"),
+        .product(name: "CBORCoding", package: "CBORCoding"),
       ],
       exclude: ["TestCases"],
       swiftSettings: allTargetsSwiftSettings,
@@ -205,7 +223,7 @@ let package = Package(
       ? [
         .target(
           name: "BuildToolDependencies",
-          dependencies: ["GenerateHyloFileTests"],
+          dependencies: ["GenerateHyloFileTests", "BuildStandardLibrary"],
           swiftSettings: allTargetsSwiftSettings)
       ] : []) as [PackageDescription.Target]
 )
