@@ -123,7 +123,8 @@ let package = Package(
       dependencies: [
         "FrontEnd",
         "IR",
-        "Utils"
+        "Utils",
+        .product(name: "Collections", package: "swift-collections"),
       ],
       swiftSettings: allTargetsSwiftSettings),
 

@@ -1,4 +1,6 @@
+import Collections
 import IR
+typealias Type = IR.`Type`
 
 struct CodePointer {
 
@@ -8,10 +10,16 @@ struct CodePointer {
 }
 
 struct Register {
-  let type: IR.Type
+
+  let type: Type
+  let value: Any
+
 }
 
 struct StackFrame {
+
+  var registers: Array<Register>
+  var programCounter: CodePointer
 
 }
 
