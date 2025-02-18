@@ -1,6 +1,8 @@
+import FrontEnd
+
 /// The layout of a type in memory
-struct TypeLayout<TypeID: Hashable> {
-  typealias Component = (name: String?, type: TypeID, offset: Int)
+struct TypeLayout {
+  typealias Component = (name: String?, type: AnyType, offset: Int)
 
   /// The sub-structure of `self`.
   ///

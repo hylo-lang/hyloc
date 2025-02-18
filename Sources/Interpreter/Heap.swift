@@ -1,16 +1,25 @@
-struct Heap<TypeSystem: TypeSystemProtocol> {
+import FrontEnd
 
-  typealias Allocations = [Allocation]
+struct Heap {
+
+  /// A region of raw memory in the interpreter
   typealias RawMemory = [UInt8]
 
+  /// A region of some raw memory that has been initialized with one
+  /// or more instances of a single type.
   struct InitializedRegion {
+    /// Where the region begins in the raw memory block.
     let baseOffset: RawMemory.Index
-    let type: TypeSystem.TypeID
+
+    /// The type with which the memory has been initialized.
+    let type: AnyType
+
+    /// The number of consecutive `type` instances that begin at `baseOffset`.
     var count: Int
   }
 
   struct Allocation {
-    typealias ID = Allocations.Index
+    typealias ID = Array<Allocation>.Index
 
     var memory: RawMemory
     var initializedRegions: [InitializedRegion]
@@ -22,8 +31,5 @@ struct Heap<TypeSystem: TypeSystemProtocol> {
   }
 
   var allocation: [Allocation] = []
-  let typeSystem: TypeSystem
-
-  init(typeSystem: TypeSystem) { self.typeSystem = typeSystem }
 
 }
