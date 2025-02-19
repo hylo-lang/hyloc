@@ -41,3 +41,18 @@ struct UnrealABI: TargetABI {
   }
 
 }
+
+extension TargetABI {
+
+  /// Returns a discriminator type for the union of `n` types.
+  ///
+  /// Precondition: `n` is positive
+  func unionDiscriminator(count n: Int) -> AnyType {
+    if n == 1 { return .void }
+    let bitsNeeded = UInt(n - 1).bitsInRepresentation
+    // Integer sizes are a contiguous range of powers of 2 starting with 8
+    let integerSize = max(8, bitsNeeded.roundedUpToPowerOf2)
+    return .init(BuiltinType.i(Int(integerSize)))
+  }
+
+}
