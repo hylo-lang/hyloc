@@ -15,11 +15,7 @@ extension FixedWidthInteger where Self: UnsignedInteger {
     UInt(MemoryLayout.size(ofValue: self)).bytesToBits - UInt(self.leadingZeroBitCount)
   }
 
-  /// The minimum bit width of an
-  public var minimumUnsignedIntegerTypeBits: UInt {
-    Swift.max(8, bitsInRepresentation.roundedUpToPowerOf2)
-  }
-
+  /// Self, rounded up to the nearest power of 2.
   public var roundedUpToPowerOf2: UInt {
     self == 0 ? 1 : 1 << (self - 1).bitsInRepresentation
   }
