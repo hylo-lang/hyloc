@@ -1,6 +1,6 @@
+import FrontEnd
 import Collections
 import IR
-typealias Type = IR.`Type`
 
 struct CodePointer {
 
@@ -11,7 +11,7 @@ struct CodePointer {
 
 struct Register {
 
-  let type: Type
+  let type: IR.`Type`
   let value: Any
 
 }
@@ -27,10 +27,10 @@ struct StackFrame {
 struct Interpreter {
 
   /// The program to be executed.
-  private let program: Program
+  private let program: IR.Program
 
   /// An instance executing `p`.
-  public init(_ p: Program) {
+  public init(_ p: IR.Program) {
     program = p
   }
 
