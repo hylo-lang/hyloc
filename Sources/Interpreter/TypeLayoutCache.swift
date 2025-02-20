@@ -19,18 +19,39 @@ struct TypeLayoutCache {
     }
   }
 
-  private func offset(appending suffix: TypeLayout.Bytes, to x: TypeLayout.Bytes) -> Int {
-  }
-
   private mutating func computeLayout(_ t: AnyType) -> TypeLayout {
     switch t.base {
     case let u as UnionType:
       let basis = u.elements.map { self[$0] }
+
       let discriminator = abi.unionDiscriminator(count: basis.count)
-      let alignment = max(basis.lazy.map(\.alignment).max()!, self[discriminator].alignment)
-      let payloadSize = basis.lazy.map(\.size).max()!
-      let discriminatorOffset = 1
-      fatalError()
+      let discriminatorLayout = self[discriminator]
+
+      let payloadBytes = TypeLayout.Bytes(
+        alignment: basis.lazy.map(\.alignment).max()!,
+        size: basis.lazy.map(\.size).max()!)
+
+      let payloadFirst = payloadBytes.appending(discriminatorLayout.bytes)
+      let discriminatorFirst = discriminatorLayout.bytes.appending(payloadBytes)
+
+      if payloadFirst.size < discriminatorFirst.size {
+        return TypeLayout.init(
+          bytes: payloadFirst,
+          type: t,
+          components:
+            basis.map { (name: nil, type: $0.type, offset: 0) }
+            + [ (name: nil, type: discriminator, offset: payloadFirst.size - discriminatorLayout.size) ]
+          isUnionLayout: true)
+      }
+      else {
+        return TypeLayout.init(
+          bytes: discriminatorFirst,
+          type: t,
+          components: basis.map { (name: nil, type: $0.type, offset: discriminatorFirst.size - payloadBytes.size) }
+            + [ (name: nil, type: discriminator, offset: 0) ]
+          isUnionLayout: true)
+
+      }
     default:
       fatalError()
     }

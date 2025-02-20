@@ -1,3 +1,4 @@
+import Utils
 import FrontEnd
 
 
@@ -13,11 +14,13 @@ struct TypeLayout {
     let size: Int
 
     /// The number of bytes between the beginnings of consecutive array elements.
-    let stride: Int
+    var stride: Int {
+      size.rounded(upToNearestMultipleOf: alignment)
+    }
   }
 
-  /// Component types with their names (if any), and byte offsets from the base of this type's
-  /// layout.
+  /// Types stored in `self` with their names (if any), and byte offsets from the base of this
+  /// type's layout.
   typealias Component = (name: String?, type: AnyType, offset: Int)
 
   /// Aggregate layout values of this layout.
@@ -31,6 +34,9 @@ struct TypeLayout {
 
   /// The number of bytes between the beginnings of consecutive array elements.
   var stride: Int { bytes.stride }
+
+  /// The type whose layout is described by `self`.
+  let type: AnyType
 
   /// The sub-structure of `self`.
   ///
@@ -46,11 +52,13 @@ struct TypeLayout {
 
 extension TypeLayout.Bytes {
 
-  /// Replaces `self` with the layout of the tuple `(S, T)`, where `S` and `T` are types whose
-  /// layout is represented by `self` and `t` respectively, returning the offset of the `T` instance
-  /// in the tuple.
-  mutating func append(_ t: Self) -> Int {
-    self.alignment = max(self.alignment, t.alignment)
-    let r = (self.size + (t.alignment - 1)).round(upToNearestMultipleOf: ) / t.alignment * t.alignment
+  /// Returns the layout of the tuple `(S, T)`, where `S` and `T` are types whose layout is
+  /// represented by `self` and `t` respectively.
+  ///
+  /// - Note: the `T` instance is stored `t.size` bytes before the end of the tuple.
+  func appending(_ t: Self) -> Self {
+    let r = self.size.rounded(upToNearestMultipleOf: t.alignment)
+    return .init(alignment: max(self.alignment, t.alignment), size: r + t.size)
   }
+
 }
