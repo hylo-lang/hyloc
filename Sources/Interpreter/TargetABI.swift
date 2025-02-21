@@ -22,8 +22,7 @@ struct UnrealABI: TargetABI {
       "bit width \(bitWidth) is not a power of 2.")
     return .init(
       alignment: min(bitWidth / 8, maxAlignment),
-      size: bitWidth / 8,
-      stride: bitWidth / 8)
+      size: bitWidth / 8)
   }
 
   func layout(_ t: BuiltinType) -> TypeLayout.Bytes {
