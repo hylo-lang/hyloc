@@ -19,9 +19,7 @@ struct TypeLayoutCache {
     }
   }
 
-  private mutating func computeLayout(_ t: AnyType) -> TypeLayout {
-    switch t.base {
-    case let u as UnionType:
+  private mutating func computeLayout(_ u: UnionType) -> TypeLayout {
       let basis = u.elements.map { self[$0] }
 
       let discriminator = abi.unionDiscriminator(count: basis.count)
@@ -34,28 +32,52 @@ struct TypeLayoutCache {
       let payloadFirst = payloadBytes.appending(discriminatorLayout.bytes)
       let discriminatorFirst = discriminatorLayout.bytes.appending(payloadBytes)
 
+      let payloadOffset: Int
+      let discriminatorOffset: Int
+      let l: TypeLayout.Bytes
+
       if payloadFirst.size < discriminatorFirst.size {
-        return TypeLayout.init(
-          bytes: payloadFirst,
-          type: t,
-          components:
-            basis.map { (name: nil, type: $0.type, offset: 0) }
-            + [ (name: nil, type: discriminator, offset: payloadFirst.size - discriminatorLayout.size) ]
-          isUnionLayout: true)
+        l = payloadFirst
+        payloadOffset = 0
+        discriminatorOffset = l.size - discriminatorLayout.size
       }
       else {
-        return TypeLayout.init(
-          bytes: discriminatorFirst,
-          type: t,
-          components: basis.map { (name: nil, type: $0.type, offset: discriminatorFirst.size - payloadBytes.size) }
-            + [ (name: nil, type: discriminator, offset: 0) ]
-          isUnionLayout: true)
-
+        l = discriminatorFirst
+        payloadOffset = l.size - payloadBytes.size
+        discriminatorOffset = 0
       }
+
+      return TypeLayout.init(
+        bytes: l,
+        type: ^u,
+        components:
+          basis.map { (name: String(describing: $0.type), type: $0.type, offset: payloadOffset) }
+          + [ (name: "discriminator",  type: discriminator, offset: discriminatorOffset) ],
+        isUnionLayout: true)
+  }
+
+  private mutating func concretized(_ l: AbstractTypeLayout) -> TypeLayout {
+    let f = l.properties.first!
+    var b = self[f.type].bytes
+    var components: [TypeLayout.Component] = [(name: f.label ?? "0", type: f.type, offset: 0)]
+    for (i, p) in l.properties.enumerated() {
+      let c = self[p.type].bytes
+      b = b.appending(c)
+      components.append((name: f.label ?? String(describing: i), type: p.type, offset: b.size - c.size))
+    }
+    return TypeLayout(bytes: b, type: l.type, components: components, isUnionLayout: false)
+  }
+
+  private mutating func computeLayout(_ t: AnyType) -> TypeLayout {
+    switch t.base {
+    case let u as UnionType:
+      computeLayout(u)
+    case let u as BuiltinType:
+      TypeLayout(bytes: abi.layout(u), type: t, components: [], isUnionLayout: false)
+    case _ where t.hasRecordLayout:
+      concretized(AbstractTypeLayout(of: t, definedIn: p))
     default:
       fatalError()
     }
-    let a = AbstractTypeLayout(of: t, definedIn: p)
-    fatalError()
   }
 }
